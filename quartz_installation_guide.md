@@ -1,12 +1,12 @@
 # Obsidian + Quartz + Cloudflare Pages 무료 블로그 구축 매뉴얼 (2026년 최신 기준)
 
-이 문서는 Obsidian(옵시디언) 노트를 Quartz 4/5 프레임워크와 Cloudflare Pages를 결합하여 웹상에 완전히 무료로 배포하고 자동화하는 통합 설치 매뉴얼입니다. 구글 드라이브(가상 드라이브)에서의 파일 충돌 및 Windows PowerShell 실행 보안 정책 등 발생할 수 있는 주요 에러 예방책을 포함하여 검증된 단계로 정리했습니다.
+이 문서는 Obsidian(옵시디언) 노트를 Quartz 5 프레임워크와 Cloudflare Pages를 결합하여 웹상에 완전히 무료로 배포하고 자동화하는 통합 설치 매뉴얼입니다. 구글 드라이브(가상 드라이브)에서의 파일 충돌 및 Windows PowerShell 실행 보안 정책 등 발생할 수 있는 주요 에러 예방책과 2026년 최종 배포에 성공한 실제 해결 내역을 포함하여 정리했습니다.
 
 ---
 
 ## 🛠️ 준비 사항
 시작하기 전에 아래 도구들이 PC에 설치되어 있어야 합니다.
-1. **Node.js** (LTS 버전 권장, v20 이상)
+1. **Node.js** (v22.0.0 이상 필수, Quartz 5 빌드 최저 요구사항)
 2. **Git** (로컬 소스 관리 및 GitHub 업로드용)
 3. **Obsidian** (노트 작성용 마크다운 에디터)
 4. **GitHub 계정** 및 **Cloudflare 계정**
@@ -62,90 +62,63 @@ Cloudflare Pages가 내 노트를 자동으로 감지하여 빌드할 수 있도
 
 ---
 
-## 3단계: Obsidian 연동 및 로컬 테스트
-실제 노트 편집 도구인 Obsidian을 프로젝트 폴더와 연동하고 로컬 컴퓨터에서 사이트를 띄워 검증합니다.
+## 3단계: 구글 드라이브(G:) - 로컬 물리드라이브(D:) 실시간 연동 자동화
+실제 작업은 기존 구글 드라이브인 `G:\내 드라이브\MY Obsidian`에서 자유롭게 작성하고, 업로드할 때만 D드라이브로 파일을 안전하게 덤프하여 복제하는 **1초 자동화 스크립트**를 구성하여 배포 안정성을 확보합니다.
 
-1. **Obsidian에서 보관소 열기**:
-   * Obsidian 앱을 실행한 후 **[보관소로 폴더 열기 (Open folder as vault)]**를 선택합니다.
-   * 방금 생성하여 초기화한 로컬 폴더 **`D:\깃 클론(Clone)`**을 찾아 선택하여 엽니다.
-
-2. **첫 페이지 작성**:
-   * Obsidian 좌측 파일 내비게이터에서 **`content`** 폴더를 엽니다.
-   * `content` 내에 자동으로 생성된 **`index.md`** 파일을 엽니다.
-   * 파일 맨 상단에 메타데이터(Frontmatter)와 함께 원하는 소개글을 작성합니다:
-     ```markdown
-     ---
-     title: 내 블로그 홈
-     ---
-
-     안녕하세요! Obsidian과 Quartz로 만든 블로그에 오신 것을 환영합니다!
-     ```
-
-3. **로컬 개발 서버 실행**:
-   * 명령 프롬프트(cmd)에서 아래 명령어를 실행하여 로컬 서버를 구동합니다.
-     ```cmd
-     npx quartz build --serve
-     ```
-   * 빌드가 완료되면 브라우저를 열고 **`http://localhost:8080`**에 접속하여 내 블로그가 화면에 예쁘게 나오는지 확인합니다.
-   * 확인이 끝났다면 터미널 창에서 `Ctrl + C`를 눌러 서버를 종료합니다.
-
----
-
-## 4단계: 변경사항 GitHub 업로드
-로컬에서 설정이 끝난 파일들을 GitHub에 저장하여 배포 준비 상태로 만듭니다.
-
-```cmd
-git add -A
-git commit -m "Initialize Quartz 5"
-git push origin v4
-```
-*(브랜치 명이 `v4` 또는 `main`일 수 있으니, 터미널에 명시된 기본 브랜치 이름을 사용해 주세요.)*
+1. **윈도우 바탕화면**에 `블로그_업로드.bat` 파일을 생성합니다.
+2. 스크립트 내용은 아래와 같이 적용합니다:
+   ```batch
+   @echo off
+   chcp 65001 >nul
+   title Obsidian Quartz Blog Auto-Uploader
+   
+   set SOURCE_DIR=G:\내 드라이브\MY Obsidian
+   set DEST_DIR=D:\깃 클론(Clone)\content
+   
+   echo 1. 구글 드라이브에서 최신 마크다운 노트 복사 중...
+   robocopy "%SOURCE_DIR%" "%DEST_DIR%" /MIR /XD .obsidian
+   
+   echo 2. 복사 완료! Git 업로드 및 블로그 배포 시작...
+   d:
+   cd "D:\깃 클론(Clone)"
+   git add -A
+   git commit -m "Auto-published Obsidian notes from Google Drive"
+   git push origin v5
+   
+   echo 업로드 성공!
+   pause
+   ```
+3. 앞으로 글 작성이 끝나면 바탕화면의 **`블로그_업로드.bat`** 파일만 더블 클릭해 주면 자동으로 깃허브 업로드까지 논스톱 완료됩니다.
 
 ---
 
-## 5단계: Cloudflare Pages 배포 및 자동화 설정 (최신)
+## 4단계: Cloudflare Pages 배포 및 언어 설정
 GitHub에 소스코드가 업데이트될 때마다 Cloudflare가 자동으로 빌드하여 웹사이트를 갱신하도록 구성합니다.
 
-1. **Cloudflare 대시보드 진입**:
-   * [Cloudflare 대시보드](https://dash.cloudflare.com/)에 로그인합니다.
-   * 좌측 메뉴에서 **[Workers & Pages]** ➔ **[Create]**를 클릭합니다.
-   * 상단 탭에서 **[Pages]**를 누르고 **[Connect to Git]**을 클릭하여 본인의 GitHub 계정을 연동합니다.
-   * 연동된 레포지토리 목록에서 방금 생성했던 `my-quartz-blog` 레포지토리를 선택하고 **[Begin setup]**을 누릅니다.
+1. **Cloudflare 대시보드 진입 및 Pages 연결**:
+   * [Cloudflare 대시보드](https://dash.cloudflare.com/) 로그인 후 **[Workers & Pages]** ➔ **[Create]** ➔ **[Pages]** ➔ **[Connect to Git]**을 클릭하여 본인의 GitHub 계정을 연동합니다.
+   * `my-quartz-blog` 레포지토리를 선택하고 **[Begin setup]**을 누릅니다.
 
 2. **프로젝트 빌드 설정**:
-   * **프로젝트 이름**: 원하는 서브도메인을 결정합니다. (예: `my-blog` 입력 시 `my-blog.pages.dev` 주소 획득)
-   * **프로덕션 분기**: `v4` (또는 GitHub에 푸시했던 브랜치 명 선택)
+   * **프로덕션 분기**: **`v5`** (v5 브랜치를 기본값으로 지정합니다.)
    * **프레임워크 사전 설정 (Framework preset)**: **`None (없음)`** 선택
-   * **빌드 명령 (Build command)**: 
-     ```bash
-     npx quartz build
-     ```
-   * **출력 디렉토리 (Build output directory)**: 
-     ```text
-     public
-     ```
+   * **빌드 명령 (Build command)**: `npx quartz build`
+   * **출력 디렉토리 (Build output directory)**: `public`
 
-3. **환경 변수 지정 (매우 중요)**:
-   * 빌드 최적화 및 에러 방지를 위해 Node.js 환경변수를 추가해야 합니다.
-   * 아래 **[환경 변수 (Environment variables)]** 섹션을 펼치고 **[+ Add variable]**을 누릅니다.
-     * **변수 이름(Variable name)**: `NODE_VERSION`
-     * **값(Value)**: `20` (또는 `22`)
+3. **환경 변수 지정 (필수 ⚠️)**:
+   * **변수 이름(Variable name)**: `NODE_VERSION`
+   * **값(Value)**: **`22`** (Quartz 5 빌드 안정성을 위해 반드시 22 이상 지정)
 
-4. **저장 및 배포**:
-   * **[Save and Deploy]** 버튼을 클릭하여 최초 배포를 시작합니다.
-   * 빌드가 완료되면 화면에 출력되는 고유 `pages.dev` 도메인으로 접속하여 블로그가 전 세계에 무료로 배포된 것을 확인합니다.
-   * 앞으로 Obsidian에서 글을 작성하고 GitHub에 `git push`만 해주면 Cloudflare가 자동으로 감지해 2~3분 내에 사이트를 새롭게 업데이트합니다.
+4. **한국어 로캘(Locale) 변경 설정**:
+   * 블로그 UI가 중국어나 영어로 깨져서 나오는 것을 방지하기 위해 로컬 컴퓨터의 [quartz.config.yaml](file:///d:/깃 클론(Clone)/quartz.config.yaml#L9) 파일 내 **`locale: ko-KR`** 로 지정한 뒤 다시 푸시합니다.
 
 ---
 
-## 💡 자주 발생하는 트러블슈팅
-### Q1. PowerShell에서 `npm i` 입력 시 스크립트를 실행할 수 없다는 보안 에러가 발생합니다.
-* **원인**: 윈도우 PowerShell의 기본 스크립트 실행 제한 정책 때문입니다.
-* **해결**: 명령 프롬프트(cmd) 창을 실행해 작업하거나, 현재 PowerShell 창에 아래 임시 정책 완화 명령어를 입력하고 다시 시도하세요.
-  ```powershell
-  Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
-  ```
+## 💡 자주 발생하는 트러블슈팅 및 해결 이력
+### Q1. `fatal: No url found for submodule path...` 에러와 함께 복제가 터집니다.
+* **원인**: Quartz 프레임워크가 외부 플러그인을 가져올 때 가상 링크(Submodules) 정보를 참조하다가, 외부 주소가 깨지거나 만료되어 발생합니다.
+* **해결**: 로컬 `.gitmodules` 파일을 삭제하고, `.quartz/plugins/` 내부 하위 디렉토리에 몰래 숨어있던 외부 깃 설정 디렉토리(`.git` 폴더)들을 모두 찾아서 강제 박멸합니다. 그 후 일반 물리 폴더 상태로 인덱스에 강제 스테이징(`git add .quartz/`)하여 푸시하면 해결됩니다.
 
-### Q2. 구글 드라이브(G:) 내에서 빌드할 때 파일 관련 에러가 발생합니다.
-* **원인**: Cloudflare/Quartz 빌드 툴체인 및 Node.js 패키지 시스템은 구글 드라이브의 가상 파일 마운트 시스템과 호환성이 좋지 않아 파일 잠금 충돌을 일으킵니다.
-* **해결**: 반드시 D드라이브나 C드라이브 등 순수 로컬 물리 드라이브 폴더에서 전체 작업을 세팅하여 진행하세요.
+### Q2. `.quartz` 폴더 내부의 설정 및 파일이 깃에 올라가지 않아 빌드가 깨집니다.
+* **원인**: 기본 설정된 `.gitignore` 파일에 `.quartz/` 폴더가 추적 제외(Ignored)로 잡혀 있어 원격지에는 빈 껍데기만 푸시되어 그렇습니다.
+* **해결**: `.gitignore` 파일을 메모장이나 에디터로 열어 `.quartz/` 라고 적힌 제외 룰 라인을 삭제한 뒤 다시 푸시해 줍니다.
