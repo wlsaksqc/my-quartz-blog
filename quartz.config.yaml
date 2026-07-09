@@ -6,7 +6,7 @@ configuration:
   enablePopovers: true
   analytics:
     provider: plausible
-  locale: en-US
+  locale: ko-KR
   baseUrl: wlsaksqc.pages.dev
   ignorePatterns:
     - private
